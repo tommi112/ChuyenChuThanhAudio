@@ -1,13 +1,6 @@
 """
-tts.py - Flask backend for Text-to-Speech app.
-
-Voice selection ladder (pyttsx3):
-    1. Vietnamese voice if available.
-    2. Voice matching requested gender (male/female).
-    3. First available voice.
-    4. Engine default.
-
-Always falls back so /tts never fails just because of voice selection.
+Flask backend for Text-to-Speech app.
+Supports pyttsx3 (offline) and gTTS (Google TTS).
 """
 
 import logging
@@ -18,7 +11,7 @@ import threading
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import pyttsx3
-from gtts import gTTS   # thêm gTTS
+from gtts import gTTS
 
 try:
     from pydub import AudioSegment
@@ -26,14 +19,18 @@ try:
 except ImportError:
     PYDUB_AVAILABLE = False
 
+# Logging setup
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("tts-server")
 
+# Flask app
 app = Flask(__name__)
 CORS(app)
 
+# Lock for thread safety
 tts_lock = threading.Lock()
 
+# Constants
 MAX_TEXT_LENGTH = 3000
 DEFAULT_RATE = 180
 MIN_RATE = 80
@@ -42,6 +39,7 @@ MAX_RATE = 400
 FEMALE_HINTS = ["female", "zira", "samantha", "victoria", "susan", "hazel", "linh", "an"]
 MALE_HINTS = ["male", "david", "alex", "daniel", "mark", "george", "minh", "nam"]
 
+# ---------------- Voice selection helpers ----------------
 def list_voices():
     engine = pyttsx3.init()
     try:
@@ -87,6 +85,7 @@ def pick_voice(voices, gender):
         return g, f"{gender} fallback ({g.name})"
     return voices[0], f"default ({voices[0].name})"
 
+# ---------------- Audio generation ----------------
 def generate_wav(text, gender, rate, force_default=False):
     engine = pyttsx3.init()
     try:
@@ -124,6 +123,11 @@ def generate_with_gtts(text, lang="vi"):
     tts.save(mp3_path)
     return mp3_path, "audio/mpeg", "output.mp3", f"gTTS-{lang}"
 
+# ---------------- Routes ----------------
+@app.route("/", methods=["GET"])
+def index():
+    return "Flask TTS backend is running!"
+
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"ok": True})
@@ -134,7 +138,7 @@ def tts():
     text = data.get("text", "")
     voice_pref = data.get("voice", "female")
     rate = data.get("rate", DEFAULT_RATE)
-    lang = data.get("lang", "en")  # thêm tham số lang
+    lang = data.get("lang", "en")
 
     if not isinstance(text, str) or not text.strip():
         return jsonify({"error": "Empty text"}), 400
@@ -175,5 +179,7 @@ def tts():
     response.call_on_close(cleanup)
     return response
 
+# ---------------- Main ----------------
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True, threaded=False)
+    app.run(host="0.0.0.0", port=5000, debug=True, threaded=False)
+
