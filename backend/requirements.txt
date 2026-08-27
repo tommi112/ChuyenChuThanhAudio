@@ -1,0 +1,14 @@
+Flask==3.0.3
+flask-cors==4.0.1
+pyttsx3==2.90
+pydub==0.25.1
+
+# pyttsx3 backends per OS (installed automatically as needed by pip on most
+# platforms, listed here for reference / manual troubleshooting):
+#   Windows -> pywin32 (SAPI5)
+#   macOS   -> pyobjc (NSSpeechSynthesizer) - usually already present
+#   Linux   -> requires the espeak or espeak-ng system package (see README)
+#
+# pydub also requires the ffmpeg binary to be installed and on PATH for
+# WAV -> MP3 conversion. If ffmpeg is not found, the backend automatically
+# falls back to serving WAV audio instead of failing the request.
